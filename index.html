@@ -410,6 +410,7 @@ function renderHome(){
 
 /* ---------- Screen: Host setup (name + vetoes only) ---------- */
 function renderHostSetup(prefillErr){
+  if(prefillErr && typeof prefillErr !== 'string') prefillErr = null;
   clearApp();
   app.appendChild(el(`
     <div class="wrap">
@@ -473,6 +474,7 @@ function createRoom({name, vetoes}){
 
 /* ---------- Screen: Join ---------- */
 function renderJoin(prefillErr){
+  if(prefillErr && typeof prefillErr !== 'string') prefillErr = null;
   clearApp();
   app.appendChild(el(`
     <div class="wrap">
@@ -530,6 +532,7 @@ function enterRoom(){
     if(room.status==='lobby') renderLobby(room);
     else if(room.status==='vetoing') renderVetoing(room);
     else if(room.status==='voting') renderVoting(room);
+    else if(room.status==='tiebreak') renderVoting(room);
     else if(room.status==='ended') renderEnded(room);
   });
   unsub.push(()=>roomRef.off('value', cb));
@@ -677,17 +680,26 @@ function toggleVeto(planId){
 function renderVoting(room){
   const me = room.players[playerId];
   if(!me){ renderHome(); return; }
+  const isTiebreak = room.status === 'tiebreak';
   const plans = room.plans || {};
   const players = room.players || {};
   const votes = room.votes || {};
-  const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy);
+
+  let candidatePairs;
+  if(isTiebreak){
+    const ids = room.tiebreakPlans || [];
+    candidatePairs = ids.map(id=>[id, plans[id]]).filter(([id,p])=>p);
+  } else {
+    candidatePairs = Object.entries(plans).filter(([id,p])=>!p.vetoedBy);
+  }
+
   const myVote = votes[playerId];
   const totalPlayers = Object.keys(players).length;
   const votedCount = Object.keys(votes).length;
   const everyoneVoted = votedCount === totalPlayers;
 
   const tally = {};
-  survivors.forEach(([id])=>tally[id]=0);
+  candidatePairs.forEach(([id])=>tally[id]=0);
   Object.values(votes).forEach(planId=>{ if(tally[planId]!==undefined) tally[planId]++; });
 
   app.innerHTML='';
@@ -695,13 +707,15 @@ function renderVoting(room){
     <div class="wrap">
       <div class="stack">
         <div class="top-flex">
-          <span class="pill strong">Fase de voto</span>
+          <span class="pill strong">${isTiebreak ? '⚡ Desempate' : 'Fase de voto'}</span>
           <span class="pill">${votedCount}/${totalPlayers} han votado</span>
         </div>
-        <p class="lead">Elige tu favorito entre los que sobrevivieron. Puedes cambiar el voto hasta que se cierre.</p>
+        ${isTiebreak
+          ? `<div class="banner" style="background:rgba(255,194,75,0.15);color:var(--gold);border:1px solid rgba(255,194,75,0.35);">¡Empate entre ${candidatePairs.length}! Volved a votar entre estos.</div>`
+          : `<p class="lead">Elige tu favorito entre los que sobrevivieron. Puedes cambiar el voto hasta que se cierre.</p>`}
 
         <div class="stack" style="gap:8px;">
-          ${survivors.map(([id,p])=>{
+          ${candidatePairs.map(([id,p])=>{
             const mine = myVote === id;
             const count = tally[id] || 0;
             return `
@@ -713,7 +727,7 @@ function renderVoting(room){
         </div>
 
         <div class="banner info">${everyoneVoted ? '¡Todos han votado! Podéis cerrar.' : 'Cualquiera puede cerrar la votación cuando esté claro.'}</div>
-        <button class="block" id="closeBtn">Cerrar votación y ver ganador</button>
+        <button class="block" id="closeBtn">${isTiebreak ? 'Cerrar desempate' : 'Cerrar votación'}</button>
       </div>
     </div>
   `));
@@ -731,23 +745,51 @@ function renderVoting(room){
 function closeVoting(){
   roomRef.once('value').then(snap=>{
     const room = snap.val();
-    if(!room || room.status!=='voting') return;
+    if(!room) return;
+    const isTiebreak = room.status === 'tiebreak';
+    if(room.status !== 'voting' && !isTiebreak) return;
+
     const plans = room.plans || {};
     const votes = room.votes || {};
-    const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy).map(([id])=>id);
-    const tally = {};
-    survivors.forEach(id=>tally[id]=0);
-    Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
-    let winnerId = null;
-    if(survivors.length === 0){
-      winnerId = null;
+
+    let candidates;
+    if(isTiebreak){
+      candidates = room.tiebreakPlans || [];
     } else {
-      let max = -1;
-      survivors.forEach(id=>{ if(tally[id]>max) max = tally[id]; });
-      const top = survivors.filter(id=>tally[id]===max);
-      winnerId = top[Math.floor(Math.random()*top.length)];
+      candidates = Object.entries(plans).filter(([id,p])=>!p.vetoedBy).map(([id])=>id);
     }
-    roomRef.update({status:'ended', winner: winnerId});
+
+    if(candidates.length === 0){
+      roomRef.update({status:'ended', winner: null});
+      return;
+    }
+
+    const tally = {};
+    candidates.forEach(id=>tally[id]=0);
+    Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
+
+    let max = -1;
+    candidates.forEach(id=>{ if(tally[id]>max) max = tally[id]; });
+    const top = candidates.filter(id=>tally[id]===max);
+
+    if(top.length === 1){
+      // Clear winner
+      const updates = {status:'ended', winner: top[0]};
+      if(!isTiebreak) updates.originalTally = tally;
+      roomRef.update(updates);
+    } else if(isTiebreak){
+      // Already in a tiebreak and still tied — decide at random to avoid loops
+      const winner = top[Math.floor(Math.random()*top.length)];
+      roomRef.update({status:'ended', winner: winner, tiebreakResolvedRandomly: true});
+    } else {
+      // First tie — trigger tiebreak round
+      roomRef.update({
+        status:'tiebreak',
+        tiebreakPlans: top,
+        originalTally: tally,
+        votes: {}
+      });
+    }
   });
 }
 
@@ -758,14 +800,26 @@ function renderEnded(room){
   const votes = room.votes || {};
   const winnerId = room.winner;
   const winner = winnerId ? plans[winnerId] : null;
+  const hadTiebreak = !!room.originalTally && !!room.tiebreakPlans;
 
   const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy);
-  const tally = {};
-  survivors.forEach(([id])=>tally[id]=0);
-  Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
+
+  // Prefer the saved originalTally when available (survives a tiebreak round);
+  // otherwise compute from current votes.
+  let tally;
+  if(room.originalTally){
+    tally = room.originalTally;
+  } else {
+    tally = {};
+    survivors.forEach(([id])=>tally[id]=0);
+    Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
+  }
+
   const ranked = survivors
     .filter(([id])=>id !== winnerId)
-    .sort((a,b)=>tally[b[0]]-tally[a[0]]);
+    .sort((a,b)=>(tally[b[0]]||0)-(tally[a[0]]||0));
+
+  const winnerVotes = tally[winnerId] || 0;
 
   app.innerHTML='';
   app.appendChild(el(`
@@ -775,18 +829,20 @@ function renderEnded(room){
           <p class="pill" style="background:rgba(255,194,75,0.2);color:var(--gold);border-color:rgba(255,194,75,0.4);">Plan de hoy</p>
           <div style="font-size:56px;line-height:1;margin-top:10px;">${winner ? (winner.emoji||'') : ''}</div>
           <div class="winner-name">${winner ? escapeHtml(winner.name) : 'Sin ganador'}</div>
-          ${winner ? `<p class="lead" style="margin-top:14px;">${tally[winnerId]} voto${tally[winnerId]===1?'':'s'}</p>` : ''}
+          ${winner ? `<p class="lead" style="margin-top:14px;">${winnerVotes} voto${winnerVotes===1?'':'s'}${hadTiebreak? ' · ganó el desempate':''}${room.tiebreakResolvedRandomly? ' (al azar)':''}</p>` : ''}
         </div>
 
         ${ranked.length ? `
           <div class="card stack">
             <h3 style="font-size:16px;color:var(--muted);">También sonaron</h3>
-            ${ranked.map(([id,p])=>`
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);">
-                <span>${p.emoji||''} ${escapeHtml(p.name)}</span>
-                <span style="color:var(--muted);font-family:'Space Grotesk',monospace;">${tally[id]} voto${tally[id]===1?'':'s'}</span>
-              </div>
-            `).join('')}
+            ${ranked.map(([id,p])=>{
+              const c = tally[id] || 0;
+              return `
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);">
+                  <span>${p.emoji||''} ${escapeHtml(p.name)}</span>
+                  <span style="color:var(--muted);font-family:'Space Grotesk',monospace;">${c} voto${c===1?'':'s'}</span>
+                </div>`;
+            }).join('')}
           </div>
         ` : ''}
 
