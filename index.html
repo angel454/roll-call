@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Sala Rápida — trivia en vivo</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<title>Roll Call — decide el plan de hoy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📣</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,8 +22,6 @@
     --gold:#FFC24B;
     --teal:#2FE0C4;
     --violet:#9B7BFF;
-    --good:#2FE0C4;
-    --bad:#FF5A5F;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -50,8 +48,8 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    padding:28px 18px 40px;
+    justify-content:flex-start;
+    padding:24px 16px 40px;
     width:100%;
   }
   .wrap{width:100%;max-width:560px;}
@@ -60,14 +58,14 @@
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:20px;
-    padding:28px;
+    padding:24px;
   }
   .stack{display:flex;flex-direction:column;gap:14px;}
   .row{display:flex;gap:12px;}
   .center{text-align:center;}
   p.lead{color:var(--muted);font-size:15px;line-height:1.55;margin:8px 0 0;}
   label{font-size:13px;color:var(--muted);font-weight:600;}
-  input[type=text], textarea{
+  input[type=text], input[type=number], textarea{
     width:100%;
     background:var(--surface-2);
     border:1px solid var(--line);
@@ -78,7 +76,7 @@
     font-family:inherit;
     outline:none;
   }
-  input[type=text]:focus, textarea:focus{border-color:var(--violet);}
+  input:focus, textarea:focus{border-color:var(--violet);}
   input.code-input{
     text-transform:uppercase;
     letter-spacing:0.35em;
@@ -87,14 +85,14 @@
     font-size:22px;
     font-weight:700;
   }
-  textarea{min-height:180px;font-size:13px;line-height:1.5;resize:vertical;}
+  textarea{min-height:150px;font-size:15px;line-height:1.5;resize:vertical;}
   button{
     font-family:'Space Grotesk','Inter',sans-serif;
     font-weight:700;
     font-size:16px;
     border:none;
     border-radius:12px;
-    padding:15px 20px;
+    padding:14px 20px;
     cursor:pointer;
     color:#171335;
     background:var(--teal);
@@ -116,26 +114,11 @@
   }
   button:disabled{opacity:0.45;cursor:not-allowed;}
   button.block{width:100%;}
-  .big-choice{
-    display:flex;
-    align-items:center;
-    gap:16px;
-    padding:22px;
-    border-radius:16px;
-    font-size:17px;
-    text-align:left;
-    color:#171335;
-  }
-  .shape{
-    flex:0 0 auto;
-    width:30px;height:30px;
-    display:flex;align-items:center;justify-content:center;
-  }
   .code-display{
     font-family:'Space Grotesk',monospace;
-    font-size:56px;
+    font-size:52px;
     font-weight:700;
-    letter-spacing:0.12em;
+    letter-spacing:0.14em;
     text-align:center;
     color:var(--gold);
     margin:6px 0;
@@ -151,6 +134,8 @@
     font-size:13px;
     color:var(--muted);
   }
+  .pill.strong{color:var(--text);}
+  .pill.accent{background:rgba(47,224,196,0.15);color:var(--teal);border-color:rgba(47,224,196,0.3);}
   .player-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
   .chip{
     background:var(--surface-2);
@@ -159,31 +144,125 @@
     padding:8px 14px;
     font-size:14px;
     font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
   }
-  .timerbar{
-    height:8px;
-    border-radius:999px;
+  .chip.done{background:rgba(47,224,196,0.15);color:var(--teal);border-color:rgba(47,224,196,0.3);}
+  .top-flex{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+
+  /* Plan grid */
+  .plans-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  @media (max-width:480px){ .code-display{font-size:42px;} }
+  .plan-card{
     background:var(--surface-2);
-    overflow:hidden;
-    margin:4px 0 2px;
+    border:2px solid transparent;
+    border-radius:16px;
+    padding:14px 12px;
+    text-align:center;
+    color:var(--text);
+    font-size:16px;
+    font-weight:600;
+    font-family:inherit;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:space-between;
+    min-height:120px;
+    cursor:pointer;
+    transition:transform .15s ease, opacity .3s ease;
   }
-  .timerbar > div{height:100%;background:var(--gold);transition:width .2s linear;}
-  .qtext{font-size:22px;line-height:1.35;margin:2px 0 4px;}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media (max-width:480px){ .grid2{grid-template-columns:1fr;} .code-display{font-size:44px;} }
-  table.board{width:100%;border-collapse:collapse;}
-  table.board td{padding:12px 6px;border-bottom:1px solid var(--line);font-size:15px;}
-  table.board td.rank{color:var(--muted);width:32px;font-family:'Space Grotesk',monospace;}
-  table.board td.score{text-align:right;font-family:'Space Grotesk',monospace;font-weight:700;color:var(--gold);}
-  .banner{
+  .plan-card .plan-emoji{font-size:32px;line-height:1;}
+  .plan-card .plan-name{font-size:14px;line-height:1.25;margin-top:6px;}
+  .plan-card .plan-meta{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:8px;
+    font-weight:500;
+  }
+  .plan-card.vetoed{
+    background:transparent;
+    border:1px dashed rgba(244,242,255,0.15);
+    color:var(--muted);
+    cursor:default;
+  }
+  .plan-card.vetoed .plan-name{
+    text-decoration:line-through;
+    text-decoration-thickness:2px;
+    text-decoration-color:var(--coral);
+  }
+  .plan-card.mine-vetoed{
+    background:rgba(255,90,95,0.12);
+    border:2px solid rgba(255,90,95,0.35);
+    cursor:pointer;
+    color:var(--text);
+  }
+  .plan-card.mine-vetoed .plan-name{
+    text-decoration:line-through;
+    text-decoration-thickness:2px;
+    text-decoration-color:var(--coral);
+  }
+  .plan-card.mine-vetoed .plan-meta{color:var(--coral);font-weight:700;}
+  .plan-card.disabled{cursor:default;opacity:0.6;}
+  .plan-card:not(.vetoed):not(.disabled):hover{transform:translateY(-2px);border-color:var(--violet);}
+
+  /* Voting */
+  .vote-option{
+    background:var(--surface-2);
+    border:2px solid transparent;
     border-radius:14px;
     padding:16px 18px;
-    font-weight:700;
-    font-size:17px;
-    margin-bottom:4px;
+    color:var(--text);
+    font-size:16px;
+    font-weight:600;
+    font-family:inherit;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    cursor:pointer;
+    width:100%;
+    text-align:left;
   }
-  .banner.ok{background:rgba(47,224,196,0.15);color:var(--teal);}
-  .banner.no{background:rgba(255,90,95,0.15);color:var(--coral);}
+  .vote-option .tally{
+    font-family:'Space Grotesk',monospace;
+    font-weight:700;
+    color:var(--gold);
+    font-size:18px;
+  }
+  .vote-option.mine{
+    border-color:var(--teal);
+    background:rgba(47,224,196,0.12);
+  }
+  .vote-option:hover{border-color:var(--violet);}
+
+  .winner-card{
+    background:linear-gradient(140deg, rgba(255,194,75,0.25), rgba(47,224,196,0.15));
+    border:1px solid rgba(255,194,75,0.4);
+    border-radius:20px;
+    padding:32px 24px;
+    text-align:center;
+  }
+  .winner-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:36px;
+    font-weight:700;
+    color:var(--gold);
+    line-height:1.1;
+    margin-top:4px;
+  }
+
+  .banner{
+    border-radius:14px;
+    padding:14px 16px;
+    font-weight:600;
+    font-size:15px;
+  }
+  .banner.info{background:var(--surface-2);color:var(--muted);}
   footer{
     text-align:center;
     color:var(--muted);
@@ -193,71 +272,74 @@
   }
   a.linklike{color:var(--teal);text-decoration:none;font-weight:600;}
   .error-msg{color:var(--coral);font-size:14px;font-weight:600;}
-  .top-flex{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .divider{height:1px;background:var(--line);margin:6px 0;}
+  .num-input{max-width:100px;text-align:center;}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<footer>Sala Rápida · funciona con tu propio proyecto Firebase gratuito</footer>
+<footer>Roll Call · pool de planes, veto en vivo, voto final</footer>
 
 <script>
-/* ---------- Config ---------- */
-const QUESTION_MS = 20000; // 20s por pregunta
-const DEFAULT_QUIZ = [
-  {q:"¿Cuál es el océano más grande del mundo?", options:["Atlántico","Índico","Pacífico","Ártico"], correct:2},
-  {q:"¿En qué año llegó el ser humano a la Luna?", options:["1965","1969","1972","1958"], correct:1},
-  {q:"¿Cuál es el elemento químico más abundante en el universo?", options:["Oxígeno","Carbono","Helio","Hidrógeno"], correct:3},
-  {q:"¿Quién pintó 'La noche estrellada'?", options:["Monet","Van Gogh","Dalí","Picasso"], correct:1},
-  {q:"¿Cuál es el animal terrestre más rápido?", options:["León","Guepardo","Antílope","Caballo"], correct:1},
-];
-const SHAPES = [
-  {color:"var(--coral)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3 L21 20 L3 20 Z" fill="#171335"/></svg>'},
-  {color:"var(--gold)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#171335"/></svg>'},
-  {color:"var(--teal)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="9" fill="#171335"/></svg>'},
-  {color:"var(--violet)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><rect x="4" y="4" width="16" height="16" rx="3" fill="#171335"/></svg>'},
+/* ---------- Plan catalog (fixed, same for every room) ---------- */
+const CATALOG = [
+  {id:'canas',       emoji:'🍺', name:'Cañas'},
+  {id:'restaurante', emoji:'🍽️', name:'Cena en un restaurante'},
+  {id:'tapas',       emoji:'🥘', name:'Ir de tapas'},
+  {id:'domicilio',   emoji:'🍕', name:'Pedir a domicilio'},
+  {id:'cocinar',     emoji:'👨‍🍳', name:'Cocinar algo juntos'},
+  {id:'cafe',        emoji:'☕', name:'Café o merienda'},
+  {id:'brunch',      emoji:'🥞', name:'Brunch'},
+  {id:'cine',        emoji:'🎬', name:'Cine'},
+  {id:'concierto',   emoji:'🎸', name:'Concierto'},
+  {id:'museo',       emoji:'🖼️', name:'Museo o exposición'},
+  {id:'teatro',      emoji:'🎭', name:'Teatro'},
+  {id:'mercadillo',  emoji:'🎡', name:'Feria o mercadillo'},
+  {id:'bolera',      emoji:'🎳', name:'Bolera'},
+  {id:'karaoke',     emoji:'🎤', name:'Karaoke'},
+  {id:'escape',      emoji:'🗝️', name:'Escape room'},
+  {id:'karts',       emoji:'🏎️', name:'Karts'},
+  {id:'padel',       emoji:'🎾', name:'Pádel o similar'},
+  {id:'ruta',        emoji:'🥾', name:'Ruta o senderismo'},
+  {id:'paseo',       emoji:'🚶', name:'Paseo largo por la ciudad'},
+  {id:'peli_casa',   emoji:'🍿', name:'Peli en casa'},
+  {id:'serie',       emoji:'📺', name:'Maratón de serie'},
+  {id:'juegos_mesa', emoji:'🎲', name:'Juegos de mesa'},
+  {id:'videojuegos', emoji:'🎮', name:'Sesión de videojuegos'},
+  {id:'fiesta',      emoji:'🕺', name:'Salir de fiesta'},
+  {id:'spa',         emoji:'♨️', name:'Balneario o spa'},
+  {id:'terraza',     emoji:'🌇', name:'Terraza a ver el atardecer'}
 ];
 
 /* ---------- State ---------- */
 let db = null;
-let role = null;         // 'host' | 'player'
 let roomCode = null;
 let playerId = null;
 let roomRef = null;
 let unsub = [];
-let lastRenderedIndex = -1;
-let hasAnsweredThisQuestion = false;
-let timerInterval = null;
-
 const app = document.getElementById('app');
 
-/* ---------- Firebase bootstrap ---------- */
+/* ---------- Firebase config bootstrap ---------- */
 function getSavedConfig(){
   try { return JSON.parse(localStorage.getItem('sr_firebase_config')||'null'); }
   catch(e){ return null; }
 }
 function saveConfig(cfg){ localStorage.setItem('sr_firebase_config', JSON.stringify(cfg)); }
-
 function initFirebase(cfg){
-  firebase.initializeApp(cfg);
+  if(firebase.apps.length===0) firebase.initializeApp(cfg);
   db = firebase.database();
 }
-
 function boot(){
   const cfg = getSavedConfig();
   if(!cfg){ renderSetup(); return; }
-  try{
-    initFirebase(cfg);
-    renderHome();
-  }catch(e){
-    renderSetup("No se pudo conectar con esa configuración. Revisa que sea correcta.");
-  }
+  try{ initFirebase(cfg); renderHome(); }
+  catch(e){ renderSetup("No se pudo conectar con esa configuración."); }
 }
 
 /* ---------- Helpers ---------- */
 function clearApp(){
   unsub.forEach(fn=>{ try{fn();}catch(e){} });
   unsub = [];
-  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
   app.innerHTML = '';
 }
 function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
@@ -266,30 +348,25 @@ function genCode(){
   let s=''; for(let i=0;i<5;i++) s+=chars[Math.floor(Math.random()*chars.length)];
   return s;
 }
-function genPlayerId(){ return 'p_'+Math.random().toString(36).slice(2,10); }
+function genId(prefix){ return prefix+'_'+Math.random().toString(36).slice(2,10); }
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+function savePlayerId(code, id){ sessionStorage.setItem('rc_pid_'+code, id); }
+function getSavedPlayerId(code){ return sessionStorage.getItem('rc_pid_'+code); }
 
-/* ---------- Screen: Setup (Firebase config) ---------- */
+/* ---------- Screen: Firebase setup ---------- */
 function renderSetup(errorMsg){
   clearApp();
   app.appendChild(el(`
-    <div class="wrap">
+    <div class="wrap" style="margin-top:20px;">
       <div class="card stack">
-        <h1>⚡ Configura tu base de datos</h1>
-        <p class="lead">Esta app necesita un proyecto Firebase gratuito propio para sincronizar las salas entre dispositivos. Solo se hace una vez.</p>
-        <ol class="lead" style="padding-left:18px;margin:6px 0;">
-          <li>Ve a <a class="linklike" href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> y crea un proyecto (gratis).</li>
-          <li>En el proyecto, activa <b>Realtime Database</b> (no Firestore).</li>
-          <li>En Configuración del proyecto → tus apps, registra una app web y copia el objeto <code>firebaseConfig</code>.</li>
-          <li>Pégalo abajo tal cual (incluyendo las llaves <code>{ }</code>).</li>
-        </ol>
+        <h1>📣 Configura tu base de datos</h1>
+        <p class="lead">Esta app usa un proyecto Firebase gratuito propio para sincronizar las salas entre dispositivos. Solo se hace una vez por navegador.</p>
         ${errorMsg ? `<div class="error-msg">${escapeHtml(errorMsg)}</div>` : ''}
-        <label>Pega aquí tu firebaseConfig</label>
-        <textarea id="cfgInput" placeholder='{"apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", "appId": "..."}'></textarea>
+        <label>Pega aquí tu firebaseConfig (JSON con comillas dobles)</label>
+        <textarea id="cfgInput" placeholder='{"apiKey":"...","databaseURL":"...", ...}'></textarea>
         <button class="block" id="saveCfgBtn">Guardar y continuar</button>
-        <p class="lead" style="font-size:13px;">Consejo: en las reglas de tu Realtime Database, permite lectura/escritura en el nodo <code>rooms</code> (te doy el JSON exacto en el README del proyecto).</p>
       </div>
     </div>
   `));
@@ -297,15 +374,11 @@ function renderSetup(errorMsg){
     const raw = document.getElementById('cfgInput').value.trim();
     let cfg;
     try{ cfg = JSON.parse(raw); }
-    catch(e){ renderSetup("Eso no es un JSON válido. Copia el objeto firebaseConfig completo desde Firebase."); return; }
-    if(!cfg.databaseURL){ renderSetup("Falta 'databaseURL'. Asegúrate de haber activado Realtime Database (no solo Firestore) antes de copiar la config."); return; }
+    catch(e){ renderSetup("Eso no es JSON válido. Usa comillas dobles en las claves."); return; }
+    if(!cfg.databaseURL){ renderSetup("Falta 'databaseURL'. Asegúrate de activar Realtime Database antes de copiar la config."); return; }
     saveConfig(cfg);
-    try{
-      initFirebase(cfg);
-      renderHome();
-    }catch(e){
-      renderSetup("No se pudo inicializar Firebase con esos datos. Verifica que copiaste todo correctamente.");
-    }
+    try{ initFirebase(cfg); renderHome(); }
+    catch(e){ renderSetup("No se pudo inicializar Firebase con esos datos."); }
   };
 }
 
@@ -313,276 +386,98 @@ function renderSetup(errorMsg){
 function renderHome(){
   clearApp();
   app.appendChild(el(`
-    <div class="wrap">
+    <div class="wrap" style="margin-top:40px;">
       <div class="stack center" style="margin-bottom:22px;">
-        <h1 style="font-size:38px;">⚡ Sala Rápida</h1>
-        <p class="lead">Trivia en vivo con tus amigos, desde cualquier sitio.</p>
+        <h1 style="font-size:44px;">📣 Roll Call</h1>
+        <p class="lead">Pool de planes, veto en vivo, voto final. Decidid en 2 minutos qué hacéis hoy.</p>
       </div>
       <div class="stack">
-        <button class="block" id="hostBtn">Crear una partida</button>
+        <button class="block" id="hostBtn">Crear plan de quedada</button>
         <button class="block secondary" id="joinBtn">Unirme con un código</button>
       </div>
-      <div class="center" style="margin-top:18px;">
+      <div class="center" style="margin-top:22px;">
         <button class="ghost" id="resetCfgBtn">Cambiar configuración de Firebase</button>
       </div>
     </div>
   `));
-  document.getElementById('hostBtn').onclick = renderHostSetupQuiz;
-  document.getElementById('joinBtn').onclick = renderJoin;
+  document.getElementById('hostBtn').onclick = renderHostSetup;
+  document.getElementById('joinBtn').onclick = ()=>renderJoin();
   document.getElementById('resetCfgBtn').onclick = ()=>{
     localStorage.removeItem('sr_firebase_config');
     renderSetup();
   };
 }
 
-/* ---------- HOST: quiz setup ---------- */
-function renderHostSetupQuiz(){
+/* ---------- Screen: Host setup (name + vetoes only) ---------- */
+function renderHostSetup(prefillErr){
   clearApp();
-  const quizJson = JSON.stringify(DEFAULT_QUIZ, null, 2);
   app.appendChild(el(`
     <div class="wrap">
       <div class="card stack">
-        <h2>Prepara las preguntas</h2>
-        <p class="lead">Puedes usar el quiz de ejemplo o pegar el tuyo con este formato: pregunta, 4 opciones y el índice (0-3) de la correcta.</p>
-        <textarea id="quizInput">${escapeHtml(quizJson)}</textarea>
-        <div id="quizErr" class="error-msg" style="display:none;"></div>
+        <h2>Nueva quedada</h2>
+        <p class="lead">La lista de planes es fija — todos veréis los mismos ${CATALOG.length} candidatos. Solo elige cuántos puede tachar cada persona.</p>
+
+        <label>Tu nombre</label>
+        <input type="text" id="hostName" maxlength="20" placeholder="Escribe tu nombre">
+
+        <label>Vetos por persona</label>
+        <input type="number" id="vetoesInput" class="num-input" min="1" max="10" value="2">
+
+        ${prefillErr ? `<div class="error-msg">${escapeHtml(prefillErr)}</div>` : ''}
+
         <div class="row">
-          <button class="secondary" id="backHomeBtn">Volver</button>
-          <button class="block" id="createRoomBtn">Crear sala</button>
+          <button class="secondary" id="backBtn">Volver</button>
+          <button class="block" id="createBtn">Crear sala</button>
         </div>
       </div>
     </div>
   `));
-  document.getElementById('backHomeBtn').onclick = renderHome;
-  document.getElementById('createRoomBtn').onclick = ()=>{
-    let quiz;
-    try{ quiz = JSON.parse(document.getElementById('quizInput').value); }
-    catch(e){ showErr("Ese texto no es un JSON válido."); return; }
-    if(!Array.isArray(quiz) || quiz.length===0){ showErr("Necesitas al menos una pregunta en una lista."); return; }
-    for(const q of quiz){
-      if(!q.q || !Array.isArray(q.options) || q.options.length!==4 || typeof q.correct!=='number'){
-        showErr("Cada pregunta necesita: q, options (4) y correct (0-3)."); return;
-      }
-    }
-    createRoom(quiz);
+  document.getElementById('backBtn').onclick = renderHome;
+  document.getElementById('createBtn').onclick = ()=>{
+    const name = document.getElementById('hostName').value.trim();
+    const vetoes = parseInt(document.getElementById('vetoesInput').value, 10);
+    if(!name){ renderHostSetup("Escribe tu nombre."); return; }
+    if(!Number.isFinite(vetoes) || vetoes < 1 || vetoes > 10){ renderHostSetup("Los vetos deben ir entre 1 y 10."); return; }
+    if(vetoes >= CATALOG.length){ renderHostSetup("Los vetos por persona deben ser menos que el número de planes."); return; }
+    createRoom({name, vetoes});
   };
-  function showErr(msg){
-    const e=document.getElementById('quizErr');
-    e.style.display='block'; e.textContent=msg;
-  }
 }
 
-function createRoom(quiz){
-  role='host';
+function createRoom({name, vetoes}){
   roomCode = genCode();
+  playerId = genId('p');
+  savePlayerId(roomCode, playerId);
   roomRef = db.ref('rooms/'+roomCode);
+
+  const plansObj = {};
+  CATALOG.forEach(p=>{
+    plansObj[p.id] = {name:p.name, emoji:p.emoji, vetoedBy:null};
+  });
+
   roomRef.set({
     createdAt: firebase.database.ServerValue.TIMESTAMP,
     status: 'lobby',
-    questions: quiz,
-    currentIndex: -1,
-    questionStartedAt: null,
-    players: {},
-    answers: {}
+    vetoesPerPlayer: vetoes,
+    plans: plansObj,
+    players: {
+      [playerId]: {name, isHost:true, vetoesLeft: vetoes}
+    },
+    votes: {},
+    winner: null
   }).then(()=>{
-    renderHostLobby();
+    enterRoom();
   }).catch(()=>{
-    renderHostSetupQuiz();
+    renderHostSetup("No se pudo crear la sala. Revisa las reglas de tu Realtime Database.");
   });
 }
 
-/* ---------- HOST: lobby ---------- */
-function renderHostLobby(){
-  clearApp();
-  app.appendChild(el(`
-    <div class="wrap">
-      <div class="card stack center">
-        <p class="pill">Código de sala</p>
-        <div class="code-display">${roomCode}</div>
-        <p class="lead">Los jugadores entran a esta app y escriben este código para unirse.</p>
-        <div id="playerCount" class="pill">0 jugadores esperando</div>
-        <div id="playerList" class="player-list center" style="justify-content:center;"></div>
-        <button class="block" id="startBtn" disabled>Esperando jugadores…</button>
-        <button class="ghost" id="cancelBtn">Cancelar partida</button>
-      </div>
-    </div>
-  `));
-  document.getElementById('cancelBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
-  document.getElementById('startBtn').onclick = ()=> roomRef.update({status:'question', currentIndex:0, questionStartedAt: firebase.database.ServerValue.TIMESTAMP, answers:{}});
-
-  const playersCb = roomRef.child('players').on('value', snap=>{
-    const players = snap.val()||{};
-    const names = Object.values(players).map(p=>p.name);
-    document.getElementById('playerCount').textContent = names.length+" jugador"+(names.length===1?'':'es')+" esperando";
-    document.getElementById('playerList').innerHTML = names.map(n=>`<span class="chip">${escapeHtml(n)}</span>`).join('') || '<span class="lead">Nadie se ha unido todavía…</span>';
-    const btn = document.getElementById('startBtn');
-    if(btn){ btn.disabled = names.length===0; btn.textContent = names.length===0 ? 'Esperando jugadores…' : 'Empezar partida'; }
-  });
-  unsub.push(()=>roomRef.child('players').off('value', playersCb));
-
-  const statusCb = roomRef.child('status').on('value', snap=>{
-    if(snap.val()==='question') renderHostQuestion();
-  });
-  unsub.push(()=>roomRef.child('status').off('value', statusCb));
-}
-
-/* ---------- HOST: question in progress ---------- */
-function renderHostQuestion(){
-  clearApp();
-  roomRef.once('value').then(snap=>{
-    const room = snap.val();
-    const idx = room.currentIndex;
-    const q = room.questions[idx];
-    lastRenderedIndex = idx;
-
-    app.appendChild(el(`
-      <div class="wrap wide">
-        <div class="card stack">
-          <div class="top-flex">
-            <span class="pill">Pregunta ${idx+1} de ${room.questions.length}</span>
-            <span class="pill" id="answeredCount">0 respuestas</span>
-          </div>
-          <div class="timerbar"><div id="timerFill" style="width:100%;"></div></div>
-          <h2 class="qtext">${escapeHtml(q.q)}</h2>
-          <div class="grid2">
-            ${q.options.map((opt,i)=>`
-              <div class="big-choice" style="background:${SHAPES[i].color};">
-                <span class="shape">${SHAPES[i].svg}</span>
-                <span>${escapeHtml(opt)}</span>
-              </div>`).join('')}
-          </div>
-          <button class="block" id="revealBtn">Mostrar resultados ahora</button>
-        </div>
-      </div>
-    `));
-    document.getElementById('revealBtn').onclick = revealAnswers;
-
-    const answersCb = roomRef.child('answers/'+idx).on('value', asnap=>{
-      const n = asnap.val()? Object.keys(asnap.val()).length : 0;
-      const el2 = document.getElementById('answeredCount');
-      if(el2) el2.textContent = n+" respuesta"+(n===1?'':'s');
-    });
-    unsub.push(()=>roomRef.child('answers/'+idx).off('value', answersCb));
-
-    const startedAt = room.questionStartedAt || Date.now();
-    timerInterval = setInterval(()=>{
-      const elapsed = Date.now()-startedAt;
-      const pct = Math.max(0, 100 - (elapsed/QUESTION_MS)*100);
-      const fill = document.getElementById('timerFill');
-      if(fill) fill.style.width = pct+'%';
-      if(elapsed >= QUESTION_MS){ clearInterval(timerInterval); timerInterval=null; revealAnswers(); }
-    }, 150);
-
-    const statusCb = roomRef.child('status').on('value', s=>{
-      if(s.val()==='reveal') renderHostReveal();
-      if(s.val()==='ended') renderHostFinal();
-    });
-    unsub.push(()=>roomRef.child('status').off('value', statusCb));
-  });
-}
-
-function revealAnswers(){
-  roomRef.once('value').then(snap=>{
-    const room = snap.val();
-    if(room.status !== 'question') return; // already revealed
-    const idx = room.currentIndex;
-    const q = room.questions[idx];
-    const answers = (room.answers && room.answers[idx]) || {};
-    const players = room.players || {};
-    const startedAt = room.questionStartedAt || Date.now();
-    const updates = {};
-    Object.keys(answers).forEach(pid=>{
-      const a = answers[pid];
-      const correct = a.optionIndex === q.correct;
-      let gained = 0;
-      if(correct){
-        const elapsed = Math.min(QUESTION_MS, Math.max(0, (a.answeredAt||startedAt) - startedAt));
-        gained = Math.round(500 + 500 * (1 - elapsed/QUESTION_MS));
-      }
-      const prevScore = (players[pid] && players[pid].score) || 0;
-      updates['players/'+pid+'/score'] = prevScore + gained;
-      updates['answers/'+idx+'/'+pid+'/gained'] = gained;
-      updates['answers/'+idx+'/'+pid+'/correct'] = correct;
-    });
-    updates['status'] = 'reveal';
-    roomRef.update(updates);
-  });
-}
-
-/* ---------- HOST: reveal / leaderboard between questions ---------- */
-function renderHostReveal(){
-  clearApp();
-  roomRef.once('value').then(snap=>{
-    const room = snap.val();
-    const idx = room.currentIndex;
-    const q = room.questions[idx];
-    const players = room.players || {};
-    const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
-    const isLast = idx >= room.questions.length-1;
-
-    app.appendChild(el(`
-      <div class="wrap">
-        <div class="card stack">
-          <p class="pill">Respuesta correcta</p>
-          <h2 class="qtext">${escapeHtml(q.options[q.correct])}</h2>
-          <h3 style="margin-top:14px;">Marcador</h3>
-          <table class="board">
-            ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('') || '<tr><td class="lead">Sin jugadores.</td></tr>'}
-          </table>
-          <button class="block" id="nextBtn">${isLast? 'Ver resultado final' : 'Siguiente pregunta'}</button>
-        </div>
-      </div>
-    `));
-    document.getElementById('nextBtn').onclick = ()=>{
-      if(isLast){ roomRef.update({status:'ended'}); }
-      else { roomRef.update({status:'question', currentIndex: idx+1, questionStartedAt: firebase.database.ServerValue.TIMESTAMP}); }
-    };
-
-    const statusCb = roomRef.child('status').on('value', s=>{
-      if(s.val()==='question' && s.val()!==room.status) renderHostQuestion();
-      if(s.val()==='ended') renderHostFinal();
-    });
-    unsub.push(()=>roomRef.child('status').off('value', statusCb));
-    // also catch transition explicitly since closures above check stale room.status
-    const idxCb = roomRef.child('currentIndex').on('value', s=>{
-      if(s.val()!==idx){
-        roomRef.child('status').once('value').then(st=>{
-          if(st.val()==='question') renderHostQuestion();
-        });
-      }
-    });
-    unsub.push(()=>roomRef.child('currentIndex').off('value', idxCb));
-  });
-}
-
-function renderHostFinal(){
-  clearApp();
-  roomRef.once('value').then(snap=>{
-    const room = snap.val();
-    const players = room.players || {};
-    const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
-    app.appendChild(el(`
-      <div class="wrap">
-        <div class="card stack center">
-          <h1>🏆 ¡Partida terminada!</h1>
-          <table class="board" style="text-align:left;margin-top:10px;">
-            ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('')}
-          </table>
-          <button class="block" id="newGameBtn">Nueva partida</button>
-        </div>
-      </div>
-    `));
-    document.getElementById('newGameBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
-  });
-}
-
-/* ---------- PLAYER: join ---------- */
+/* ---------- Screen: Join ---------- */
 function renderJoin(prefillErr){
   clearApp();
   app.appendChild(el(`
     <div class="wrap">
       <div class="card stack">
-        <h2>Unirme a una partida</h2>
+        <h2>Unirme a una quedada</h2>
         <label>Código de sala</label>
         <input type="text" id="codeInput" class="code-input" maxlength="5" placeholder="ABCDE">
         <label>Tu nombre</label>
@@ -590,13 +485,13 @@ function renderJoin(prefillErr){
         ${prefillErr ? `<div class="error-msg">${escapeHtml(prefillErr)}</div>` : ''}
         <div class="row">
           <button class="secondary" id="backBtn">Volver</button>
-          <button class="block" id="joinRoomBtn">Entrar</button>
+          <button class="block" id="joinBtn">Entrar</button>
         </div>
       </div>
     </div>
   `));
   document.getElementById('backBtn').onclick = renderHome;
-  document.getElementById('joinRoomBtn').onclick = doJoin;
+  document.getElementById('joinBtn').onclick = doJoin;
   document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doJoin(); });
 }
 
@@ -608,137 +503,307 @@ function doJoin(){
   const ref = db.ref('rooms/'+code);
   ref.once('value').then(snap=>{
     if(!snap.exists()){ renderJoin("No existe ninguna sala con ese código."); return; }
-    role='player'; roomCode=code; roomRef=ref;
-    playerId = sessionStorage.getItem('sr_pid_'+code) || genPlayerId();
-    sessionStorage.setItem('sr_pid_'+code, playerId);
-    roomRef.child('players/'+playerId).set({name, score:0}).then(()=>{
-      renderPlayerRoom();
-    });
+    const room = snap.val();
+    if(room.status !== 'lobby'){ renderJoin("Esa quedada ya ha empezado, no puedes unirte ahora."); return; }
+    roomCode = code; roomRef = ref;
+    playerId = getSavedPlayerId(code) || genId('p');
+    savePlayerId(code, playerId);
+    roomRef.child('players/'+playerId).set({
+      name,
+      isHost:false,
+      vetoesLeft: room.vetoesPerPlayer
+    }).then(enterRoom);
   });
 }
 
-/* ---------- PLAYER: main room controller ---------- */
-function renderPlayerRoom(){
+/* ---------- Room controller (single subscription, routes by status) ---------- */
+function enterRoom(){
   clearApp();
-  hasAnsweredThisQuestion = false;
-  lastRenderedIndex = -1;
-  const statusCb = roomRef.on('value', snap=>{
+  let lastStatus = null;
+  const cb = roomRef.on('value', snap=>{
     const room = snap.val();
     if(!room){ renderHome(); return; }
-    if(room.status==='lobby') renderPlayerWaiting(room);
-    else if(room.status==='question') renderPlayerQuestion(room);
-    else if(room.status==='reveal') renderPlayerReveal(room);
-    else if(room.status==='ended') renderPlayerFinal(room);
+    // Reroute on status change; re-render current phase on any change
+    if(room.status !== lastStatus){
+      lastStatus = room.status;
+    }
+    if(room.status==='lobby') renderLobby(room);
+    else if(room.status==='vetoing') renderVetoing(room);
+    else if(room.status==='voting') renderVoting(room);
+    else if(room.status==='ended') renderEnded(room);
   });
-  unsub.push(()=>roomRef.off('value', statusCb));
+  unsub.push(()=>roomRef.off('value', cb));
 }
 
-function renderPlayerWaiting(room){
-  const n = room.players? Object.keys(room.players).length : 1;
+/* ---------- Lobby ---------- */
+function renderLobby(room){
+  const isHost = room.players[playerId] && room.players[playerId].isHost;
+  const players = room.players || {};
+  const names = Object.values(players);
+  const plansCount = Object.keys(room.plans || {}).length;
+
   app.innerHTML='';
   app.appendChild(el(`
     <div class="wrap">
       <div class="card stack center">
-        <p class="pill">Sala ${roomCode}</p>
-        <h2>¡Estás dentro!</h2>
-        <p class="lead">Esperando a que el anfitrión empiece la partida…</p>
-        <p class="pill">${n} jugador${n===1?'':'es'} en la sala</p>
+        <p class="pill">Código de sala</p>
+        <div class="code-display">${roomCode}</div>
+        <p class="lead">Comparte este código para que se unan.</p>
+        <div class="divider"></div>
+        <p class="pill strong">${plansCount} planes · ${room.vetoesPerPlayer} vetos por persona</p>
+        <p class="pill accent">${names.length} en la sala</p>
+        <div class="player-list center" style="justify-content:center;">
+          ${names.map(p=>`<span class="chip">${escapeHtml(p.name)}${p.isHost?' 👑':''}</span>`).join('')}
+        </div>
+        ${isHost ? `
+          <button class="block" id="startBtn" ${names.length<2?'disabled':''}>${names.length<2?'Esperando a que alguien más entre…':'Empezar a vetar'}</button>
+          <button class="ghost" id="cancelBtn">Cancelar quedada</button>
+        ` : `
+          <p class="lead">Esperando a que el anfitrión empiece…</p>
+          <button class="ghost" id="leaveBtn">Salir</button>
+        `}
       </div>
     </div>
   `));
+  if(isHost){
+    document.getElementById('startBtn').onclick = ()=> roomRef.update({status:'vetoing'});
+    document.getElementById('cancelBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
+  } else {
+    document.getElementById('leaveBtn').onclick = ()=>{
+      roomRef.child('players/'+playerId).remove().then(renderHome);
+    };
+  }
 }
 
-function renderPlayerQuestion(room){
-  const idx = room.currentIndex;
-  const alreadyAnswered = !!(room.answers && room.answers[idx] && room.answers[idx][playerId]);
-  if(idx===lastRenderedIndex && !alreadyAnswered) return; // avoid re-render flicker while waiting
-  lastRenderedIndex = idx;
-  const q = room.questions[idx];
+/* ---------- Vetoing ---------- */
+function renderVetoing(room){
+  const me = room.players[playerId];
+  if(!me){ renderHome(); return; }
+  const players = room.players || {};
+  const plans = room.plans || {};
+  const planEntries = Object.entries(plans);
+  const remaining = planEntries.filter(([id,p])=>!p.vetoedBy).length;
+
+  const playerVals = Object.values(players);
+  const doneCount = playerVals.filter(p=>p.vetoesLeft===0).length;
+  const totalPlayers = playerVals.length;
+  const everyoneDone = doneCount === totalPlayers;
+
   app.innerHTML='';
-
-  if(alreadyAnswered){
-    app.appendChild(el(`
-      <div class="wrap">
-        <div class="card stack center">
-          <p class="pill">Pregunta ${idx+1} de ${room.questions.length}</p>
-          <h2>Respuesta enviada</h2>
-          <p class="lead">Esperando a que el anfitrión muestre los resultados…</p>
-        </div>
-      </div>
-    `));
-    return;
-  }
-
   app.appendChild(el(`
-    <div class="wrap">
-      <div class="card stack">
+    <div class="wrap wide">
+      <div class="stack">
         <div class="top-flex">
-          <span class="pill">Pregunta ${idx+1} de ${room.questions.length}</span>
+          <span class="pill strong">Fase de veto</span>
+          <span class="pill accent">Te quedan ${me.vetoesLeft} veto${me.vetoesLeft===1?'':'s'}</span>
         </div>
-        <h2 class="qtext">${escapeHtml(q.q)}</h2>
-        <div class="grid2">
-          ${q.options.map((opt,i)=>`
-            <button class="big-choice" data-i="${i}" style="background:${SHAPES[i].color};">
-              <span class="shape">${SHAPES[i].svg}</span>
-              <span>${escapeHtml(opt)}</span>
-            </button>`).join('')}
+        <div class="top-flex">
+          <span class="pill">${remaining} planes en pie</span>
+          <span class="pill">${doneCount}/${totalPlayers} han terminado</span>
         </div>
+
+        <div class="plans-grid" id="plansGrid">
+          ${planEntries.map(([id,p])=>{
+            const vetoedByMe = p.vetoedBy === playerId;
+            const vetoedByOther = p.vetoedBy && !vetoedByMe;
+            const vetoerName = p.vetoedBy && players[p.vetoedBy] ? players[p.vetoedBy].name : '';
+            let cls = 'plan-card';
+            let meta = '';
+            let clickable = false;
+            if(vetoedByMe){
+              cls += ' mine-vetoed';
+              meta = 'Tú lo has vetado · toca para deshacer';
+              clickable = true;
+            } else if(vetoedByOther){
+              cls += ' vetoed';
+              meta = escapeHtml(vetoerName)+' lo ha vetado';
+            } else if(me.vetoesLeft <= 0){
+              cls += ' disabled';
+              meta = 'Sin vetos disponibles';
+            } else {
+              meta = 'Toca para vetar';
+              clickable = true;
+            }
+            return `
+              <div class="${cls}" data-id="${id}" data-clickable="${clickable}">
+                <div class="plan-emoji">${p.emoji||''}</div>
+                <div class="plan-name">${escapeHtml(p.name)}</div>
+                <div class="plan-meta">${meta}</div>
+              </div>`;
+          }).join('')}
+        </div>
+
+        <div class="banner info">${everyoneDone ? 'Todos habéis usado vuestros vetos. ¡Adelante!' : 'Cuando queráis, cualquiera puede pasar a la votación.'}</div>
+        <button class="block" id="toVoteBtn" ${remaining<2?'disabled':''}>${remaining<2?'Necesitas al menos 2 planes en pie':'Ir a la votación'}</button>
       </div>
     </div>
   `));
-  app.querySelectorAll('.big-choice').forEach(btn=>{
-    btn.onclick = ()=>{
-      const i = Number(btn.dataset.i);
-      app.querySelectorAll('.big-choice').forEach(b=>b.disabled=true);
-      roomRef.child('answers/'+idx+'/'+playerId).set({
-        optionIndex:i,
-        answeredAt: firebase.database.ServerValue.TIMESTAMP
-      });
+
+  document.querySelectorAll('.plan-card').forEach(card=>{
+    if(card.dataset.clickable !== 'true') return;
+    card.onclick = ()=>{
+      const planId = card.dataset.id;
+      toggleVeto(planId);
     };
   });
+
+  document.getElementById('toVoteBtn').onclick = ()=>{
+    roomRef.update({status:'voting', votes:{}});
+  };
 }
 
-function renderPlayerReveal(room){
-  const idx = room.currentIndex;
-  const q = room.questions[idx];
-  const mine = room.answers && room.answers[idx] && room.answers[idx][playerId];
+function toggleVeto(planId){
+  roomRef.transaction(room=>{
+    if(!room || room.status !== 'vetoing') return room;
+    const plan = room.plans && room.plans[planId];
+    const player = room.players && room.players[playerId];
+    if(!plan || !player) return room;
+
+    if(plan.vetoedBy === playerId){
+      // undo my veto
+      plan.vetoedBy = null;
+      player.vetoesLeft = (player.vetoesLeft||0) + 1;
+    } else if(!plan.vetoedBy){
+      // new veto
+      if((player.vetoesLeft||0) <= 0) return; // abort
+      plan.vetoedBy = playerId;
+      player.vetoesLeft = player.vetoesLeft - 1;
+    }
+    return room;
+  });
+}
+
+/* ---------- Voting ---------- */
+function renderVoting(room){
+  const me = room.players[playerId];
+  if(!me){ renderHome(); return; }
+  const plans = room.plans || {};
   const players = room.players || {};
-  const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
-  const myScore = (players[playerId]&&players[playerId].score)||0;
-  const myRank = ranked.findIndex(p=>p.name===players[playerId]?.name && p.score===myScore)+1;
-  const correct = mine ? mine.correct : false;
-  const gained = mine ? (mine.gained||0) : 0;
+  const votes = room.votes || {};
+  const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy);
+  const myVote = votes[playerId];
+  const totalPlayers = Object.keys(players).length;
+  const votedCount = Object.keys(votes).length;
+  const everyoneVoted = votedCount === totalPlayers;
+
+  const tally = {};
+  survivors.forEach(([id])=>tally[id]=0);
+  Object.values(votes).forEach(planId=>{ if(tally[planId]!==undefined) tally[planId]++; });
 
   app.innerHTML='';
   app.appendChild(el(`
     <div class="wrap">
-      <div class="card stack center">
-        <div class="banner ${correct?'ok':'no'}">${correct? '¡Correcto! +'+gained+' pts' : 'Respuesta incorrecta'}</div>
-        <p class="lead">La correcta era: <b style="color:var(--text);">${escapeHtml(q.options[q.correct])}</b></p>
-        <p class="pill">Puesto #${myRank||'-'} · ${myScore} puntos totales</p>
-        <p class="lead">Esperando la siguiente pregunta…</p>
+      <div class="stack">
+        <div class="top-flex">
+          <span class="pill strong">Fase de voto</span>
+          <span class="pill">${votedCount}/${totalPlayers} han votado</span>
+        </div>
+        <p class="lead">Elige tu favorito entre los que sobrevivieron. Puedes cambiar el voto hasta que se cierre.</p>
+
+        <div class="stack" style="gap:8px;">
+          ${survivors.map(([id,p])=>{
+            const mine = myVote === id;
+            const count = tally[id] || 0;
+            return `
+              <button class="vote-option ${mine?'mine':''}" data-id="${id}">
+                <span>${p.emoji||''} ${escapeHtml(p.name)}${mine?' · tu voto':''}</span>
+                <span class="tally">${count}</span>
+              </button>`;
+          }).join('')}
+        </div>
+
+        <div class="banner info">${everyoneVoted ? '¡Todos han votado! Podéis cerrar.' : 'Cualquiera puede cerrar la votación cuando esté claro.'}</div>
+        <button class="block" id="closeBtn">Cerrar votación y ver ganador</button>
       </div>
     </div>
   `));
+
+  document.querySelectorAll('.vote-option').forEach(btn=>{
+    btn.onclick = ()=>{
+      const planId = btn.dataset.id;
+      roomRef.child('votes/'+playerId).set(planId);
+    };
+  });
+
+  document.getElementById('closeBtn').onclick = ()=>closeVoting();
 }
 
-function renderPlayerFinal(room){
-  const players = room.players || {};
-  const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
-  const myScore = (players[playerId]&&players[playerId].score)||0;
+function closeVoting(){
+  roomRef.once('value').then(snap=>{
+    const room = snap.val();
+    if(!room || room.status!=='voting') return;
+    const plans = room.plans || {};
+    const votes = room.votes || {};
+    const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy).map(([id])=>id);
+    const tally = {};
+    survivors.forEach(id=>tally[id]=0);
+    Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
+    let winnerId = null;
+    if(survivors.length === 0){
+      winnerId = null;
+    } else {
+      let max = -1;
+      survivors.forEach(id=>{ if(tally[id]>max) max = tally[id]; });
+      const top = survivors.filter(id=>tally[id]===max);
+      winnerId = top[Math.floor(Math.random()*top.length)];
+    }
+    roomRef.update({status:'ended', winner: winnerId});
+  });
+}
+
+/* ---------- Ended ---------- */
+function renderEnded(room){
+  const isHost = room.players[playerId] && room.players[playerId].isHost;
+  const plans = room.plans || {};
+  const votes = room.votes || {};
+  const winnerId = room.winner;
+  const winner = winnerId ? plans[winnerId] : null;
+
+  const survivors = Object.entries(plans).filter(([id,p])=>!p.vetoedBy);
+  const tally = {};
+  survivors.forEach(([id])=>tally[id]=0);
+  Object.values(votes).forEach(pid=>{ if(tally[pid]!==undefined) tally[pid]++; });
+  const ranked = survivors
+    .filter(([id])=>id !== winnerId)
+    .sort((a,b)=>tally[b[0]]-tally[a[0]]);
+
   app.innerHTML='';
   app.appendChild(el(`
     <div class="wrap">
-      <div class="card stack center">
-        <h1>🏁 ¡Partida terminada!</h1>
-        <table class="board" style="text-align:left;">
-          ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('')}
-        </table>
-        <button class="block" id="leaveBtn">Salir</button>
+      <div class="stack">
+        <div class="winner-card">
+          <p class="pill" style="background:rgba(255,194,75,0.2);color:var(--gold);border-color:rgba(255,194,75,0.4);">Plan de hoy</p>
+          <div style="font-size:56px;line-height:1;margin-top:10px;">${winner ? (winner.emoji||'') : ''}</div>
+          <div class="winner-name">${winner ? escapeHtml(winner.name) : 'Sin ganador'}</div>
+          ${winner ? `<p class="lead" style="margin-top:14px;">${tally[winnerId]} voto${tally[winnerId]===1?'':'s'}</p>` : ''}
+        </div>
+
+        ${ranked.length ? `
+          <div class="card stack">
+            <h3 style="font-size:16px;color:var(--muted);">También sonaron</h3>
+            ${ranked.map(([id,p])=>`
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);">
+                <span>${p.emoji||''} ${escapeHtml(p.name)}</span>
+                <span style="color:var(--muted);font-family:'Space Grotesk',monospace;">${tally[id]} voto${tally[id]===1?'':'s'}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${isHost
+          ? `<button class="block" id="newBtn">Nueva quedada</button>
+             <button class="ghost" id="closeBtn">Cerrar sala</button>`
+          : `<button class="block secondary" id="leaveBtn">Salir</button>`}
       </div>
     </div>
   `));
-  document.getElementById('leaveBtn').onclick = renderHome;
+
+  if(isHost){
+    document.getElementById('newBtn').onclick = ()=>{ roomRef.remove(); renderHostSetup(); };
+    document.getElementById('closeBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
+  } else {
+    document.getElementById('leaveBtn').onclick = ()=>renderHome();
+  }
 }
 
 /* ---------- Start ---------- */

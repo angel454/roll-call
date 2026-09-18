@@ -1,68 +1,58 @@
-# Sala Rápida — trivia en vivo con código de sala
+# 📣 Roll Call — decide el plan de hoy
 
-Una app tipo Kahoot: alguien crea una sala, comparte un código de 5 letras, y cualquiera entra desde su móvil con un enlace, escribe su nombre, y juega en tiempo real. Nadie necesita cuenta.
+App web para decidir en 2 minutos qué hacéis cuando quedáis. Uno crea la sala con una lista de planes candidatos, comparte un código de 5 letras, y todos entran desde su móvil. Cada persona veta los planes que no le apetecen y luego se vota entre los que sobreviven.
 
-Es un único archivo (`index.html`), sin backend propio que mantener: usa **Firebase Realtime Database** (plan gratuito) solo para sincronizar el estado de la sala entre dispositivos.
+Es un único archivo (`index.html`), sin backend propio que mantener: usa **Firebase Realtime Database** (plan gratuito) solo para sincronizar el estado entre dispositivos.
+
+## Cómo funciona el juego
+
+1. **Sala** — Alguien crea una quedada: pone su nombre y (opcional) ajusta cuántos vetos tendrá cada persona (por defecto, 2). Obtiene un código de 5 letras.
+2. **Se unen los demás** — Con el código y su nombre, sin cuentas.
+3. **Fase de veto** — Todos ven la misma pool de planes predeterminados (cañas, cine, escape room, senderismo, etc.). Cada uno tacha los que no le apetecen, hasta agotar sus vetos. Se ve en vivo quién vetó cada uno. Puedes deshacer tus propios vetos.
+4. **Fase de voto** — Entre los planes que sobrevivieron, cada uno vota su favorito. Marcador visible en directo.
+5. **Ganador** — Cualquiera cierra la votación y se anuncia el plan más votado. Si hay empate, se elige al azar entre los empatados.
+
+El anfitrión no tiene poder especial sobre la partida: cualquiera puede pulsar los botones de "Ir a votación" y "Cerrar votación" cuando la sala esté lista. La única diferencia es que quien crea la sala eligió el número de vetos.
+
+## Personalizar el catálogo de planes
+
+Los planes están definidos como una constante `CATALOG` cerca del inicio del `<script>` en `index.html`. Cada uno lleva `id`, `emoji` y `name`. Añade, quita o edita entradas ahí y haz push — la próxima sala que se cree usará la nueva lista.
 
 ## Paso 1 — Crear el proyecto Firebase (gratis, ~5 min)
 
 1. Ve a **https://console.firebase.google.com** e inicia sesión con una cuenta Google.
-2. "Añadir proyecto" → ponle el nombre que quieras → puedes desactivar Google Analytics (no hace falta).
+2. "Añadir proyecto" → nombre a elección → puedes desactivar Google Analytics.
 3. Dentro del proyecto, en el menú lateral: **Compilación → Realtime Database** → "Crear base de datos".
    - Elige cualquier ubicación.
-   - Empieza en **modo de prueba** (luego aplicamos las reglas del paso 3).
-4. En el menú lateral, ve a **Configuración del proyecto** (el engranaje) → pestaña **General** → sección "Tus apps" → icono `</>` (Web) → registra una app (el nombre no importa, no hace falta hosting de Firebase).
-5. Verás un bloque de código con `const firebaseConfig = { ... }`. Copia solo el objeto `{ ... }` — lo pegarás dentro de la app en el Paso 4.
+   - Empieza en modo de prueba (luego aplicamos las reglas del paso 2).
+4. En **Configuración del proyecto** (engranaje) → pestaña General → "Tus apps" → icono `</>` (Web) → registra una app (nombre libre, sin marcar Firebase Hosting).
+5. Copia el objeto `firebaseConfig` que aparece — lo pegarás en la app en el paso 4.
 
-## Paso 2 — Configurar las reglas de la base de datos
+## Paso 2 — Reglas de la base de datos
 
-En **Realtime Database → Reglas**, pega el contenido de `rules.json` (incluido en esta carpeta) y publica.
+En **Realtime Database → Reglas**, pega el contenido de `rules.json` y publica.
 
-Esto permite lectura/escritura únicamente dentro del nodo `rooms`, que es donde vive el estado de las partidas. Es una configuración abierta (sin login) pensada para partidas casuales entre amigos — cualquiera con el enlace de tu app técnicamente podría leer/escribir salas. Para uso privado con amigos es razonable; si más adelante quieres cerrarlo más, se puede añadir autenticación anónima de Firebase.
+Es una configuración abierta (sin login) pensada para uso casual entre amigos: cualquiera con el enlace de tu app podría, técnicamente, leer o crear salas. Suficiente para partidas privadas; si más adelante quieres cerrarlo, se puede añadir autenticación anónima de Firebase.
 
-## Paso 3 — Publicar la app desde tu repo de GitHub (despliegue automático)
+## Paso 3 — Publicar la app desde GitHub
 
-En vez de subir el archivo a mano cada vez, conecta el repo una sola vez: a partir de ahí, cada `git push` publica la nueva versión sola, con historial y sin arrastrar nada.
-
-1. Sube estos tres archivos (`index.html`, `README.md`, `rules.json`) a la raíz de tu repositorio de GitHub — con `git add`, `commit` y `push`, o subiéndolos desde la web de GitHub ("Add file → Upload files").
-2. Elige un hosting y conéctalo al repo (cualquiera de los dos, ambos gratis):
-
-   **Vercel:**
-   - Ve a **vercel.com** → inicia sesión con tu cuenta de GitHub → "Add New… → Project".
-   - Selecciona tu repositorio. No hace falta tocar ninguna configuración (es un sitio estático puro) — pulsa "Deploy".
-   - Te da una URL pública (`tu-repo.vercel.app`). Cada `git push` a la rama principal la actualiza sola.
-
-   **Netlify (vía GitHub, no Drop):**
-   - Ve a **app.netlify.com** → "Add new site → Import an existing project" → conecta GitHub → elige el repo.
-   - Build command: déjalo vacío. Publish directory: `.` (la raíz).
-   - "Deploy site". Igual que con Vercel, cada push lo actualiza automáticamente.
-
-3. (Opcional) Añade un dominio propio desde el panel de Vercel/Netlify si tienes uno — ambos lo soportan gratis, solo aportas el dominio.
-
-Con esto, para cambiar las preguntas por defecto, el diseño o cualquier detalle, solo editas `index.html` en el repo y haces push: el sitio en producción se actualiza solo en menos de un minuto.
+Sube los tres archivos (`index.html`, `README.md`, `rules.json`) a la raíz de tu repo y conéctalo a **Vercel** o **Netlify** desde GitHub (ambos gratis). Cada `git push` a la rama principal despliega la nueva versión automáticamente.
 
 ## Paso 4 — Primer uso
 
-1. Abre la URL pública que te dieron.
-2. La primera vez te pedirá pegar tu `firebaseConfig` (el objeto que copiaste en el Paso 1.5). Se guarda en el navegador de cada persona, no hace falta repetirlo.
-   - **Nota:** solo quien vaya a crear salas (el anfitrión) necesita pegar la config real. Los jugadores que solo se unen con un código también verán esa pantalla la primera vez — deben pegar la misma config para conectarse a la misma base de datos. Compárteles el mismo `firebaseConfig` (no es información sensible, es una clave pública de cliente).
-3. Ya puedes crear una sala, compartir el código de 5 letras con tus amigos, y jugar.
+Abre tu URL pública. La primera vez, la app te pedirá pegar el `firebaseConfig` como JSON (con **comillas dobles** en las claves — el bloque tal cual sale de Firebase es JavaScript, hay que convertirlo). Se guarda en el navegador. Comparte la misma URL con quien vaya a jugar.
 
-## Personalizar las preguntas
+## Estructura de datos (por si quieres tocar el código)
 
-Al crear una sala, verás un cuadro de texto con el quiz en formato JSON. Puedes editarlo directamente ahí antes de crear la sala:
+Cada sala vive en `rooms/{código}`:
 
-```json
-[
-  {"q": "¿Pregunta?", "options": ["A", "B", "C", "D"], "correct": 0}
-]
+```
+status: 'lobby' | 'vetoing' | 'voting' | 'ended'
+vetoesPerPlayer: number
+plans: { plXX: { name, vetoedBy: playerId | null } }
+players: { pXX: { name, isHost, vetoesLeft } }
+votes: { playerId: planId }
+winner: planId
 ```
 
-`correct` es el índice (empezando en 0) de la opción correcta.
-
-## Cómo funciona (por si quieres tocar el código)
-
-- Cada sala vive en `rooms/{código}` dentro de la base de datos: preguntas, jugadores, respuestas y estado (`lobby` → `question` → `reveal` → ... → `ended`).
-- El anfitrión controla el avance; los jugadores solo escuchan cambios de estado y envían sus respuestas.
-- La puntuación premia acertar rápido: hasta 1000 puntos por pregunta, menos según el tiempo que tardes en responder dentro de los 20 segundos.
-- Todo el código está en `index.html`, sin build ni dependencias que instalar — es HTML + JavaScript plano más el SDK de Firebase cargado desde su CDN.
+El anfitrión es a la vez jugador (participa vetando y votando) y tiene controles extra para avanzar de fase. Todo el código está en `index.html`, sin build ni dependencias que instalar.
