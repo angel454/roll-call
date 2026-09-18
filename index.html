@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Sala Rápida — trivia en vivo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#14112B;
+    --surface:#1F1B47;
+    --surface-2:#2A2560;
+    --line: rgba(244,242,255,0.10);
+    --text:#F4F2FF;
+    --muted:#A9A3D6;
+    --coral:#FF5A5F;
+    --gold:#FFC24B;
+    --teal:#2FE0C4;
+    --violet:#9B7BFF;
+    --good:#2FE0C4;
+    --bad:#FF5A5F;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 15% -10%, rgba(155,123,255,0.20), transparent 60%),
+      radial-gradient(1000px 600px at 110% 10%, rgba(47,224,196,0.14), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk','Inter',system-ui,sans-serif;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  #app{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:28px 18px 40px;
+    width:100%;
+  }
+  .wrap{width:100%;max-width:560px;}
+  .wrap.wide{max-width:820px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:28px;
+  }
+  .stack{display:flex;flex-direction:column;gap:14px;}
+  .row{display:flex;gap:12px;}
+  .center{text-align:center;}
+  p.lead{color:var(--muted);font-size:15px;line-height:1.55;margin:8px 0 0;}
+  label{font-size:13px;color:var(--muted);font-weight:600;}
+  input[type=text], textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:16px;
+    font-family:inherit;
+    outline:none;
+  }
+  input[type=text]:focus, textarea:focus{border-color:var(--violet);}
+  input.code-input{
+    text-transform:uppercase;
+    letter-spacing:0.35em;
+    text-align:center;
+    font-family:'Space Grotesk',monospace;
+    font-size:22px;
+    font-weight:700;
+  }
+  textarea{min-height:180px;font-size:13px;line-height:1.5;resize:vertical;}
+  button{
+    font-family:'Space Grotesk','Inter',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    border:none;
+    border-radius:12px;
+    padding:15px 20px;
+    cursor:pointer;
+    color:#171335;
+    background:var(--teal);
+    transition:transform .12s ease, filter .12s ease;
+  }
+  button:hover{filter:brightness(1.06);}
+  button:active{transform:scale(0.98);}
+  button.secondary{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--line);
+  }
+  button.ghost{
+    background:transparent;
+    color:var(--muted);
+    border:none;
+    padding:8px;
+    font-size:14px;
+  }
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  button.block{width:100%;}
+  .big-choice{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:22px;
+    border-radius:16px;
+    font-size:17px;
+    text-align:left;
+    color:#171335;
+  }
+  .shape{
+    flex:0 0 auto;
+    width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .code-display{
+    font-family:'Space Grotesk',monospace;
+    font-size:56px;
+    font-weight:700;
+    letter-spacing:0.12em;
+    text-align:center;
+    color:var(--gold);
+    margin:6px 0;
+  }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .player-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .chip{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:14px;
+    font-weight:600;
+  }
+  .timerbar{
+    height:8px;
+    border-radius:999px;
+    background:var(--surface-2);
+    overflow:hidden;
+    margin:4px 0 2px;
+  }
+  .timerbar > div{height:100%;background:var(--gold);transition:width .2s linear;}
+  .qtext{font-size:22px;line-height:1.35;margin:2px 0 4px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:480px){ .grid2{grid-template-columns:1fr;} .code-display{font-size:44px;} }
+  table.board{width:100%;border-collapse:collapse;}
+  table.board td{padding:12px 6px;border-bottom:1px solid var(--line);font-size:15px;}
+  table.board td.rank{color:var(--muted);width:32px;font-family:'Space Grotesk',monospace;}
+  table.board td.score{text-align:right;font-family:'Space Grotesk',monospace;font-weight:700;color:var(--gold);}
+  .banner{
+    border-radius:14px;
+    padding:16px 18px;
+    font-weight:700;
+    font-size:17px;
+    margin-bottom:4px;
+  }
+  .banner.ok{background:rgba(47,224,196,0.15);color:var(--teal);}
+  .banner.no{background:rgba(255,90,95,0.15);color:var(--coral);}
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    padding:12px;
+    opacity:0.6;
+  }
+  a.linklike{color:var(--teal);text-decoration:none;font-weight:600;}
+  .error-msg{color:var(--coral);font-size:14px;font-weight:600;}
+  .top-flex{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<footer>Sala Rápida · funciona con tu propio proyecto Firebase gratuito</footer>
+
+<script>
+/* ---------- Config ---------- */
+const QUESTION_MS = 20000; // 20s por pregunta
+const DEFAULT_QUIZ = [
+  {q:"¿Cuál es el océano más grande del mundo?", options:["Atlántico","Índico","Pacífico","Ártico"], correct:2},
+  {q:"¿En qué año llegó el ser humano a la Luna?", options:["1965","1969","1972","1958"], correct:1},
+  {q:"¿Cuál es el elemento químico más abundante en el universo?", options:["Oxígeno","Carbono","Helio","Hidrógeno"], correct:3},
+  {q:"¿Quién pintó 'La noche estrellada'?", options:["Monet","Van Gogh","Dalí","Picasso"], correct:1},
+  {q:"¿Cuál es el animal terrestre más rápido?", options:["León","Guepardo","Antílope","Caballo"], correct:1},
+];
+const SHAPES = [
+  {color:"var(--coral)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3 L21 20 L3 20 Z" fill="#171335"/></svg>'},
+  {color:"var(--gold)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 L22 12 L12 22 L2 12 Z" fill="#171335"/></svg>'},
+  {color:"var(--teal)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="9" fill="#171335"/></svg>'},
+  {color:"var(--violet)", svg:'<svg viewBox="0 0 24 24" width="26" height="26"><rect x="4" y="4" width="16" height="16" rx="3" fill="#171335"/></svg>'},
+];
+
+/* ---------- State ---------- */
+let db = null;
+let role = null;         // 'host' | 'player'
+let roomCode = null;
+let playerId = null;
+let roomRef = null;
+let unsub = [];
+let lastRenderedIndex = -1;
+let hasAnsweredThisQuestion = false;
+let timerInterval = null;
+
+const app = document.getElementById('app');
+
+/* ---------- Firebase bootstrap ---------- */
+function getSavedConfig(){
+  try { return JSON.parse(localStorage.getItem('sr_firebase_config')||'null'); }
+  catch(e){ return null; }
+}
+function saveConfig(cfg){ localStorage.setItem('sr_firebase_config', JSON.stringify(cfg)); }
+
+function initFirebase(cfg){
+  firebase.initializeApp(cfg);
+  db = firebase.database();
+}
+
+function boot(){
+  const cfg = getSavedConfig();
+  if(!cfg){ renderSetup(); return; }
+  try{
+    initFirebase(cfg);
+    renderHome();
+  }catch(e){
+    renderSetup("No se pudo conectar con esa configuración. Revisa que sea correcta.");
+  }
+}
+
+/* ---------- Helpers ---------- */
+function clearApp(){
+  unsub.forEach(fn=>{ try{fn();}catch(e){} });
+  unsub = [];
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+  app.innerHTML = '';
+}
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s=''; for(let i=0;i<5;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+function genPlayerId(){ return 'p_'+Math.random().toString(36).slice(2,10); }
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Screen: Setup (Firebase config) ---------- */
+function renderSetup(errorMsg){
+  clearApp();
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack">
+        <h1>⚡ Configura tu base de datos</h1>
+        <p class="lead">Esta app necesita un proyecto Firebase gratuito propio para sincronizar las salas entre dispositivos. Solo se hace una vez.</p>
+        <ol class="lead" style="padding-left:18px;margin:6px 0;">
+          <li>Ve a <a class="linklike" href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> y crea un proyecto (gratis).</li>
+          <li>En el proyecto, activa <b>Realtime Database</b> (no Firestore).</li>
+          <li>En Configuración del proyecto → tus apps, registra una app web y copia el objeto <code>firebaseConfig</code>.</li>
+          <li>Pégalo abajo tal cual (incluyendo las llaves <code>{ }</code>).</li>
+        </ol>
+        ${errorMsg ? `<div class="error-msg">${escapeHtml(errorMsg)}</div>` : ''}
+        <label>Pega aquí tu firebaseConfig</label>
+        <textarea id="cfgInput" placeholder='{"apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", "appId": "..."}'></textarea>
+        <button class="block" id="saveCfgBtn">Guardar y continuar</button>
+        <p class="lead" style="font-size:13px;">Consejo: en las reglas de tu Realtime Database, permite lectura/escritura en el nodo <code>rooms</code> (te doy el JSON exacto en el README del proyecto).</p>
+      </div>
+    </div>
+  `));
+  document.getElementById('saveCfgBtn').onclick = ()=>{
+    const raw = document.getElementById('cfgInput').value.trim();
+    let cfg;
+    try{ cfg = JSON.parse(raw); }
+    catch(e){ renderSetup("Eso no es un JSON válido. Copia el objeto firebaseConfig completo desde Firebase."); return; }
+    if(!cfg.databaseURL){ renderSetup("Falta 'databaseURL'. Asegúrate de haber activado Realtime Database (no solo Firestore) antes de copiar la config."); return; }
+    saveConfig(cfg);
+    try{
+      initFirebase(cfg);
+      renderHome();
+    }catch(e){
+      renderSetup("No se pudo inicializar Firebase con esos datos. Verifica que copiaste todo correctamente.");
+    }
+  };
+}
+
+/* ---------- Screen: Home ---------- */
+function renderHome(){
+  clearApp();
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="stack center" style="margin-bottom:22px;">
+        <h1 style="font-size:38px;">⚡ Sala Rápida</h1>
+        <p class="lead">Trivia en vivo con tus amigos, desde cualquier sitio.</p>
+      </div>
+      <div class="stack">
+        <button class="block" id="hostBtn">Crear una partida</button>
+        <button class="block secondary" id="joinBtn">Unirme con un código</button>
+      </div>
+      <div class="center" style="margin-top:18px;">
+        <button class="ghost" id="resetCfgBtn">Cambiar configuración de Firebase</button>
+      </div>
+    </div>
+  `));
+  document.getElementById('hostBtn').onclick = renderHostSetupQuiz;
+  document.getElementById('joinBtn').onclick = renderJoin;
+  document.getElementById('resetCfgBtn').onclick = ()=>{
+    localStorage.removeItem('sr_firebase_config');
+    renderSetup();
+  };
+}
+
+/* ---------- HOST: quiz setup ---------- */
+function renderHostSetupQuiz(){
+  clearApp();
+  const quizJson = JSON.stringify(DEFAULT_QUIZ, null, 2);
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack">
+        <h2>Prepara las preguntas</h2>
+        <p class="lead">Puedes usar el quiz de ejemplo o pegar el tuyo con este formato: pregunta, 4 opciones y el índice (0-3) de la correcta.</p>
+        <textarea id="quizInput">${escapeHtml(quizJson)}</textarea>
+        <div id="quizErr" class="error-msg" style="display:none;"></div>
+        <div class="row">
+          <button class="secondary" id="backHomeBtn">Volver</button>
+          <button class="block" id="createRoomBtn">Crear sala</button>
+        </div>
+      </div>
+    </div>
+  `));
+  document.getElementById('backHomeBtn').onclick = renderHome;
+  document.getElementById('createRoomBtn').onclick = ()=>{
+    let quiz;
+    try{ quiz = JSON.parse(document.getElementById('quizInput').value); }
+    catch(e){ showErr("Ese texto no es un JSON válido."); return; }
+    if(!Array.isArray(quiz) || quiz.length===0){ showErr("Necesitas al menos una pregunta en una lista."); return; }
+    for(const q of quiz){
+      if(!q.q || !Array.isArray(q.options) || q.options.length!==4 || typeof q.correct!=='number'){
+        showErr("Cada pregunta necesita: q, options (4) y correct (0-3)."); return;
+      }
+    }
+    createRoom(quiz);
+  };
+  function showErr(msg){
+    const e=document.getElementById('quizErr');
+    e.style.display='block'; e.textContent=msg;
+  }
+}
+
+function createRoom(quiz){
+  role='host';
+  roomCode = genCode();
+  roomRef = db.ref('rooms/'+roomCode);
+  roomRef.set({
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    status: 'lobby',
+    questions: quiz,
+    currentIndex: -1,
+    questionStartedAt: null,
+    players: {},
+    answers: {}
+  }).then(()=>{
+    renderHostLobby();
+  }).catch(()=>{
+    renderHostSetupQuiz();
+  });
+}
+
+/* ---------- HOST: lobby ---------- */
+function renderHostLobby(){
+  clearApp();
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack center">
+        <p class="pill">Código de sala</p>
+        <div class="code-display">${roomCode}</div>
+        <p class="lead">Los jugadores entran a esta app y escriben este código para unirse.</p>
+        <div id="playerCount" class="pill">0 jugadores esperando</div>
+        <div id="playerList" class="player-list center" style="justify-content:center;"></div>
+        <button class="block" id="startBtn" disabled>Esperando jugadores…</button>
+        <button class="ghost" id="cancelBtn">Cancelar partida</button>
+      </div>
+    </div>
+  `));
+  document.getElementById('cancelBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
+  document.getElementById('startBtn').onclick = ()=> roomRef.update({status:'question', currentIndex:0, questionStartedAt: firebase.database.ServerValue.TIMESTAMP, answers:{}});
+
+  const playersCb = roomRef.child('players').on('value', snap=>{
+    const players = snap.val()||{};
+    const names = Object.values(players).map(p=>p.name);
+    document.getElementById('playerCount').textContent = names.length+" jugador"+(names.length===1?'':'es')+" esperando";
+    document.getElementById('playerList').innerHTML = names.map(n=>`<span class="chip">${escapeHtml(n)}</span>`).join('') || '<span class="lead">Nadie se ha unido todavía…</span>';
+    const btn = document.getElementById('startBtn');
+    if(btn){ btn.disabled = names.length===0; btn.textContent = names.length===0 ? 'Esperando jugadores…' : 'Empezar partida'; }
+  });
+  unsub.push(()=>roomRef.child('players').off('value', playersCb));
+
+  const statusCb = roomRef.child('status').on('value', snap=>{
+    if(snap.val()==='question') renderHostQuestion();
+  });
+  unsub.push(()=>roomRef.child('status').off('value', statusCb));
+}
+
+/* ---------- HOST: question in progress ---------- */
+function renderHostQuestion(){
+  clearApp();
+  roomRef.once('value').then(snap=>{
+    const room = snap.val();
+    const idx = room.currentIndex;
+    const q = room.questions[idx];
+    lastRenderedIndex = idx;
+
+    app.appendChild(el(`
+      <div class="wrap wide">
+        <div class="card stack">
+          <div class="top-flex">
+            <span class="pill">Pregunta ${idx+1} de ${room.questions.length}</span>
+            <span class="pill" id="answeredCount">0 respuestas</span>
+          </div>
+          <div class="timerbar"><div id="timerFill" style="width:100%;"></div></div>
+          <h2 class="qtext">${escapeHtml(q.q)}</h2>
+          <div class="grid2">
+            ${q.options.map((opt,i)=>`
+              <div class="big-choice" style="background:${SHAPES[i].color};">
+                <span class="shape">${SHAPES[i].svg}</span>
+                <span>${escapeHtml(opt)}</span>
+              </div>`).join('')}
+          </div>
+          <button class="block" id="revealBtn">Mostrar resultados ahora</button>
+        </div>
+      </div>
+    `));
+    document.getElementById('revealBtn').onclick = revealAnswers;
+
+    const answersCb = roomRef.child('answers/'+idx).on('value', asnap=>{
+      const n = asnap.val()? Object.keys(asnap.val()).length : 0;
+      const el2 = document.getElementById('answeredCount');
+      if(el2) el2.textContent = n+" respuesta"+(n===1?'':'s');
+    });
+    unsub.push(()=>roomRef.child('answers/'+idx).off('value', answersCb));
+
+    const startedAt = room.questionStartedAt || Date.now();
+    timerInterval = setInterval(()=>{
+      const elapsed = Date.now()-startedAt;
+      const pct = Math.max(0, 100 - (elapsed/QUESTION_MS)*100);
+      const fill = document.getElementById('timerFill');
+      if(fill) fill.style.width = pct+'%';
+      if(elapsed >= QUESTION_MS){ clearInterval(timerInterval); timerInterval=null; revealAnswers(); }
+    }, 150);
+
+    const statusCb = roomRef.child('status').on('value', s=>{
+      if(s.val()==='reveal') renderHostReveal();
+      if(s.val()==='ended') renderHostFinal();
+    });
+    unsub.push(()=>roomRef.child('status').off('value', statusCb));
+  });
+}
+
+function revealAnswers(){
+  roomRef.once('value').then(snap=>{
+    const room = snap.val();
+    if(room.status !== 'question') return; // already revealed
+    const idx = room.currentIndex;
+    const q = room.questions[idx];
+    const answers = (room.answers && room.answers[idx]) || {};
+    const players = room.players || {};
+    const startedAt = room.questionStartedAt || Date.now();
+    const updates = {};
+    Object.keys(answers).forEach(pid=>{
+      const a = answers[pid];
+      const correct = a.optionIndex === q.correct;
+      let gained = 0;
+      if(correct){
+        const elapsed = Math.min(QUESTION_MS, Math.max(0, (a.answeredAt||startedAt) - startedAt));
+        gained = Math.round(500 + 500 * (1 - elapsed/QUESTION_MS));
+      }
+      const prevScore = (players[pid] && players[pid].score) || 0;
+      updates['players/'+pid+'/score'] = prevScore + gained;
+      updates['answers/'+idx+'/'+pid+'/gained'] = gained;
+      updates['answers/'+idx+'/'+pid+'/correct'] = correct;
+    });
+    updates['status'] = 'reveal';
+    roomRef.update(updates);
+  });
+}
+
+/* ---------- HOST: reveal / leaderboard between questions ---------- */
+function renderHostReveal(){
+  clearApp();
+  roomRef.once('value').then(snap=>{
+    const room = snap.val();
+    const idx = room.currentIndex;
+    const q = room.questions[idx];
+    const players = room.players || {};
+    const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
+    const isLast = idx >= room.questions.length-1;
+
+    app.appendChild(el(`
+      <div class="wrap">
+        <div class="card stack">
+          <p class="pill">Respuesta correcta</p>
+          <h2 class="qtext">${escapeHtml(q.options[q.correct])}</h2>
+          <h3 style="margin-top:14px;">Marcador</h3>
+          <table class="board">
+            ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('') || '<tr><td class="lead">Sin jugadores.</td></tr>'}
+          </table>
+          <button class="block" id="nextBtn">${isLast? 'Ver resultado final' : 'Siguiente pregunta'}</button>
+        </div>
+      </div>
+    `));
+    document.getElementById('nextBtn').onclick = ()=>{
+      if(isLast){ roomRef.update({status:'ended'}); }
+      else { roomRef.update({status:'question', currentIndex: idx+1, questionStartedAt: firebase.database.ServerValue.TIMESTAMP}); }
+    };
+
+    const statusCb = roomRef.child('status').on('value', s=>{
+      if(s.val()==='question' && s.val()!==room.status) renderHostQuestion();
+      if(s.val()==='ended') renderHostFinal();
+    });
+    unsub.push(()=>roomRef.child('status').off('value', statusCb));
+    // also catch transition explicitly since closures above check stale room.status
+    const idxCb = roomRef.child('currentIndex').on('value', s=>{
+      if(s.val()!==idx){
+        roomRef.child('status').once('value').then(st=>{
+          if(st.val()==='question') renderHostQuestion();
+        });
+      }
+    });
+    unsub.push(()=>roomRef.child('currentIndex').off('value', idxCb));
+  });
+}
+
+function renderHostFinal(){
+  clearApp();
+  roomRef.once('value').then(snap=>{
+    const room = snap.val();
+    const players = room.players || {};
+    const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
+    app.appendChild(el(`
+      <div class="wrap">
+        <div class="card stack center">
+          <h1>🏆 ¡Partida terminada!</h1>
+          <table class="board" style="text-align:left;margin-top:10px;">
+            ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('')}
+          </table>
+          <button class="block" id="newGameBtn">Nueva partida</button>
+        </div>
+      </div>
+    `));
+    document.getElementById('newGameBtn').onclick = ()=>{ roomRef.remove(); renderHome(); };
+  });
+}
+
+/* ---------- PLAYER: join ---------- */
+function renderJoin(prefillErr){
+  clearApp();
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack">
+        <h2>Unirme a una partida</h2>
+        <label>Código de sala</label>
+        <input type="text" id="codeInput" class="code-input" maxlength="5" placeholder="ABCDE">
+        <label>Tu nombre</label>
+        <input type="text" id="nameInput" maxlength="20" placeholder="Escribe tu nombre">
+        ${prefillErr ? `<div class="error-msg">${escapeHtml(prefillErr)}</div>` : ''}
+        <div class="row">
+          <button class="secondary" id="backBtn">Volver</button>
+          <button class="block" id="joinRoomBtn">Entrar</button>
+        </div>
+      </div>
+    </div>
+  `));
+  document.getElementById('backBtn').onclick = renderHome;
+  document.getElementById('joinRoomBtn').onclick = doJoin;
+  document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doJoin(); });
+}
+
+function doJoin(){
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  const name = document.getElementById('nameInput').value.trim();
+  if(!code || code.length<4){ renderJoin("Escribe el código de sala."); return; }
+  if(!name){ renderJoin("Escribe tu nombre."); return; }
+  const ref = db.ref('rooms/'+code);
+  ref.once('value').then(snap=>{
+    if(!snap.exists()){ renderJoin("No existe ninguna sala con ese código."); return; }
+    role='player'; roomCode=code; roomRef=ref;
+    playerId = sessionStorage.getItem('sr_pid_'+code) || genPlayerId();
+    sessionStorage.setItem('sr_pid_'+code, playerId);
+    roomRef.child('players/'+playerId).set({name, score:0}).then(()=>{
+      renderPlayerRoom();
+    });
+  });
+}
+
+/* ---------- PLAYER: main room controller ---------- */
+function renderPlayerRoom(){
+  clearApp();
+  hasAnsweredThisQuestion = false;
+  lastRenderedIndex = -1;
+  const statusCb = roomRef.on('value', snap=>{
+    const room = snap.val();
+    if(!room){ renderHome(); return; }
+    if(room.status==='lobby') renderPlayerWaiting(room);
+    else if(room.status==='question') renderPlayerQuestion(room);
+    else if(room.status==='reveal') renderPlayerReveal(room);
+    else if(room.status==='ended') renderPlayerFinal(room);
+  });
+  unsub.push(()=>roomRef.off('value', statusCb));
+}
+
+function renderPlayerWaiting(room){
+  const n = room.players? Object.keys(room.players).length : 1;
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack center">
+        <p class="pill">Sala ${roomCode}</p>
+        <h2>¡Estás dentro!</h2>
+        <p class="lead">Esperando a que el anfitrión empiece la partida…</p>
+        <p class="pill">${n} jugador${n===1?'':'es'} en la sala</p>
+      </div>
+    </div>
+  `));
+}
+
+function renderPlayerQuestion(room){
+  const idx = room.currentIndex;
+  const alreadyAnswered = !!(room.answers && room.answers[idx] && room.answers[idx][playerId]);
+  if(idx===lastRenderedIndex && !alreadyAnswered) return; // avoid re-render flicker while waiting
+  lastRenderedIndex = idx;
+  const q = room.questions[idx];
+  app.innerHTML='';
+
+  if(alreadyAnswered){
+    app.appendChild(el(`
+      <div class="wrap">
+        <div class="card stack center">
+          <p class="pill">Pregunta ${idx+1} de ${room.questions.length}</p>
+          <h2>Respuesta enviada</h2>
+          <p class="lead">Esperando a que el anfitrión muestre los resultados…</p>
+        </div>
+      </div>
+    `));
+    return;
+  }
+
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack">
+        <div class="top-flex">
+          <span class="pill">Pregunta ${idx+1} de ${room.questions.length}</span>
+        </div>
+        <h2 class="qtext">${escapeHtml(q.q)}</h2>
+        <div class="grid2">
+          ${q.options.map((opt,i)=>`
+            <button class="big-choice" data-i="${i}" style="background:${SHAPES[i].color};">
+              <span class="shape">${SHAPES[i].svg}</span>
+              <span>${escapeHtml(opt)}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>
+  `));
+  app.querySelectorAll('.big-choice').forEach(btn=>{
+    btn.onclick = ()=>{
+      const i = Number(btn.dataset.i);
+      app.querySelectorAll('.big-choice').forEach(b=>b.disabled=true);
+      roomRef.child('answers/'+idx+'/'+playerId).set({
+        optionIndex:i,
+        answeredAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    };
+  });
+}
+
+function renderPlayerReveal(room){
+  const idx = room.currentIndex;
+  const q = room.questions[idx];
+  const mine = room.answers && room.answers[idx] && room.answers[idx][playerId];
+  const players = room.players || {};
+  const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
+  const myScore = (players[playerId]&&players[playerId].score)||0;
+  const myRank = ranked.findIndex(p=>p.name===players[playerId]?.name && p.score===myScore)+1;
+  const correct = mine ? mine.correct : false;
+  const gained = mine ? (mine.gained||0) : 0;
+
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack center">
+        <div class="banner ${correct?'ok':'no'}">${correct? '¡Correcto! +'+gained+' pts' : 'Respuesta incorrecta'}</div>
+        <p class="lead">La correcta era: <b style="color:var(--text);">${escapeHtml(q.options[q.correct])}</b></p>
+        <p class="pill">Puesto #${myRank||'-'} · ${myScore} puntos totales</p>
+        <p class="lead">Esperando la siguiente pregunta…</p>
+      </div>
+    </div>
+  `));
+}
+
+function renderPlayerFinal(room){
+  const players = room.players || {};
+  const ranked = Object.values(players).sort((a,b)=>b.score-a.score);
+  const myScore = (players[playerId]&&players[playerId].score)||0;
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="wrap">
+      <div class="card stack center">
+        <h1>🏁 ¡Partida terminada!</h1>
+        <table class="board" style="text-align:left;">
+          ${ranked.map((p,i)=>`<tr><td class="rank">${i+1}</td><td>${escapeHtml(p.name)}</td><td class="score">${p.score}</td></tr>`).join('')}
+        </table>
+        <button class="block" id="leaveBtn">Salir</button>
+      </div>
+    </div>
+  `));
+  document.getElementById('leaveBtn').onclick = renderHome;
+}
+
+/* ---------- Start ---------- */
+boot();
+</script>
+</body>
+</html>
